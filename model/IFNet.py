@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from model.warplayer import warp
 from model.refine import *
+from typing import Optional
+from torch import Tensor
 
 def deconv(in_planes, out_planes, kernel_size=4, stride=2, padding=1):
     return nn.Sequential(
@@ -39,7 +41,7 @@ class IFBlock(nn.Module):
     def forward(self, x, flow, scale):
         if scale != 1:
             x = F.interpolate(x, scale_factor = 1. / scale, mode="bilinear", align_corners=False)
-        if flow != None:
+        if flow is not None:
             flow = F.interpolate(flow, scale_factor = 1. / scale, mode="bilinear", align_corners=False) * 1. / scale
             x = torch.cat((x, flow), 1)
         x = self.conv0(x)
@@ -71,9 +73,9 @@ class IFNet(nn.Module):
         warped_img1 = img1
         flow = None 
         loss_distill = 0
-        stu = [self.block0, self.block1, self.block2]
+        stu: List[IFBlock] = [self.block0, self.block1, self.block2]
         for i in range(3):
-            if flow != None:
+            if flow is not None:
                 flow_d, mask_d = stu[i](torch.cat((img0, img1, warped_img0, warped_img1, mask), 1), flow, scale=scale[i])
                 flow = flow + flow_d
                 mask = mask + mask_d
